@@ -1,0 +1,6 @@
+{
+  "name": "Persistent Online-First Application",
+  "description": "An online-first React 19 application utilizing TanStack v5 with a 14-day offline persistence failover mechanism.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
