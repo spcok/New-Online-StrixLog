@@ -13,7 +13,7 @@ export interface UpsertAction {
 
 export const baseService = {
   async commitToLocalVault(tableName: TableName, payload: any): Promise<void> {
-    const vault = db[tableName] as any;
+    const vault = db[tableName];
     if (!vault) return;
 
     const idKey = payload.id;
@@ -65,6 +65,46 @@ export const baseService = {
         id: crypto.randomUUID(),
         table: action.table,
         action: 'upsert',
+        payload
+      });
+    }
+  }, // <-- The missing comma that often causes parsing failures is right here
+
+  async softDelete(action: UpsertAction): Promise<void> {
+    const payload = {
+      ...action.payload,
+      is_deleted: true,
+      updated_at: new Date().toISOString()
+    };
+
+    // 1. Optimistically remove from UI
+    if (action.queryKey) {
+      queryClient.setQueryData(action.queryKey, (oldRecords: any[] = []) => 
+        oldRecords.filter((item: any) => item.id !== payload.id)
+      );
+    }
+
+    // 2. Server-First Write Pass (Updates the record to is_deleted: true)
+    try {
+      const { error } = await supabase
+        .from(action.table)
+        .update({ is_deleted: true, updated_at: payload.updated_at })
+        .eq('id', payload.id);
+
+      if (error) throw error;
+      
+      // Update local vault to reflect deletion
+      await this.commitToLocalVault(action.table, payload);
+
+    } catch (networkError) {
+      console.warn(`[BaseService] Network delete failed for '${action.table}'. Diverting to failover outbox.`);
+
+      await this.commitToLocalVault(action.table, payload);
+
+      useOutboxStore.getState().addMutation({
+        id: crypto.randomUUID(),
+        table: action.table,
+        action: 'upsert', // Upsert into outbox to push the is_deleted flag
         payload
       });
     }
