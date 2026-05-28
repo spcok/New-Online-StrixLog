@@ -1,9 +1,12 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClient } from './lib/queryClient'
-import App from './App' // Or your TanStack Router root router component
-import './index.css'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+import { queryClient } from './lib/db';
+import { QueryClientProvider } from '@tanstack/react-query';
+
+// ElectricSQL orphaned boot sequence eliminated.
+// Hydration logic is explicitly delegated to the SyncEngine component in the router.
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -11,4 +14,4 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <App />
     </QueryClientProvider>
   </React.StrictMode>
-)
+);
