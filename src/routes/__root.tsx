@@ -14,7 +14,7 @@ export const Route = createRootRoute({
     // If no session exists, redirect to login unless already there
     if (!session && location.pathname !== '/login') {
       throw redirect({
-        to: '/login',
+        to: '/login' as any,
       });
     }
   },

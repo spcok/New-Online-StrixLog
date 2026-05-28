@@ -24,7 +24,7 @@ export function Login() {
     try {
       await signIn(email, password);
       // Ensure precise route targeting for TanStack Router v1
-      navigate({ to: '/' });
+      navigate({ to: '/' as any });
     } catch (err: any) {
       if (err.message?.includes('Invalid login credentials') || err.message?.includes('invalid')) {
         setError('Invalid email or password.');
