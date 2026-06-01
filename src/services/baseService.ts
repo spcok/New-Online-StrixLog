@@ -13,7 +13,7 @@ export interface UpsertAction {
 
 export const baseService = {
   async commitToLocalVault(tableName: TableName, payload: any): Promise<void> {
-    const vault = db[tableName];
+    const vault = db[tableName] as any;
     if (!vault) return;
 
     const idKey = payload.id;
