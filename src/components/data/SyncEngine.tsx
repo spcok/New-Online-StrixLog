@@ -43,32 +43,41 @@ export function SyncEngine() {
   useEffect(() => {
     if (!session) return;
 
-    async function executeCleanRoomBoot() {
-      setStatus('BOOTING');
+    let isMounted = true;
+    let syncInterval: NodeJS.Timeout;
+
+    async function executeSyncCycle(isBoot = false) {
+      if (isBoot) setStatus('BOOTING');
+      else setStatus('SYNCING');
+      
       try {
-        setStatus('SYNCING');
-        
         if (navigator.onLine) {
           await processOfflineOutboxReplay();
         }
-
         await syncAll();
-        setStatus('COMPLETE');
+        if (isMounted) setStatus('COMPLETE');
       } catch (pipelineError) {
-        console.error('[SyncEngine] Critical initialization error:', pipelineError);
-        setStatus('ERROR');
+        console.error('[SyncEngine] Critical pipeline error:', pipelineError);
+        if (isMounted) setStatus('ERROR');
       }
     }
 
-    executeCleanRoomBoot();
+    // 1. Initial Boot Execution
+    executeSyncCycle(true);
 
-    const handleOnlineTransition = () => {
-      processOfflineOutboxReplay().then(() => syncAll());
-    };
+    // 2. Continuous 30-second heartbeat to ensure data is always fresh
+    syncInterval = setInterval(() => executeSyncCycle(false), 30000);
 
+    // 3. Online/Focus Listeners
+    const handleOnlineTransition = () => executeSyncCycle(false);
     window.addEventListener('online', handleOnlineTransition);
+    window.addEventListener('focus', handleOnlineTransition);
+
     return () => {
+      isMounted = false;
+      clearInterval(syncInterval);
       window.removeEventListener('online', handleOnlineTransition);
+      window.removeEventListener('focus', handleOnlineTransition);
     };
   }, [session]);
 

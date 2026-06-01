@@ -5,9 +5,9 @@ import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { Heart, AlertCircle, Scale, ClipboardCheck, CheckCircle, Plus, Calendar, ArrowDownAZ, ChevronLeft, ChevronRight } from 'lucide-react';
-// Note: Ensure AnimalFormModal is migrated correctly next
 import { AnimalFormModal } from '../animals/AnimalFormModal';
 import { fetchLocalTable } from '../../lib/queries'; 
+import { SyncEngine } from '../../components/data/SyncEngine'; // INJECTED ENGINE
 import type { Animal, DailyLog, FeedingSchedule, Task } from '../../types/schema';
 
 interface EnhancedAnimal extends Animal {
@@ -25,7 +25,7 @@ export function Dashboard() {
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [sortMode, setSortMode] = useState<SortMode>('NAME_ASC');
 
-  // 1. Live Query Hooks using the Universal Read Pipeline (Offline-First)
+  // --- 1. Offline-First Read Pipeline ---
   const { data: allAnimals = [] } = useQuery<Animal[]>({ 
     queryKey: ['animals'],
     queryFn: () => fetchLocalTable<Animal>('animals')
@@ -46,7 +46,7 @@ export function Dashboard() {
     queryFn: () => fetchLocalTable<FeedingSchedule>('feeding_schedules')
   });
 
-  // 2. Component-Level Logic
+  // --- 2. Data Enhancement & Filtering ---
   const rawAnimals = useMemo(() => allAnimals.filter(a => !a.is_deleted), [allAnimals]);
   const rawTasks = useMemo(() => allTasks.filter(t => t.status !== 'COMPLETED' && !t.is_deleted), [allTasks]);
 
@@ -75,7 +75,7 @@ export function Dashboard() {
       .sort((a, b) => new Date(a.scheduled_date!).getTime() - new Date(b.scheduled_date!).getTime());
   }, [allSchedules, selectedDate]);
 
-  // 3. UI Helper Functions
+  // --- 3. UI Helper Functions ---
   const adjustDate = (days: number) => {
     const date = new Date(selectedDate);
     date.setDate(date.getDate() + days);
@@ -110,7 +110,6 @@ export function Dashboard() {
     return `${g}g`;
   };
 
-  // 4. Sorting & Data Enhancement
   const sortedAnimals = [...rawAnimals].sort((a, b) => {
     if (sortMode === 'NAME_ASC') return (a.name || '').localeCompare(b.name || '');
     if (sortMode === 'NAME_DESC') return (b.name || '').localeCompare(a.name || '');
@@ -141,7 +140,7 @@ export function Dashboard() {
     ? enhancedAnimals 
     : enhancedAnimals.filter((a) => (a.category || '').toUpperCase() === activeTab);
 
-  // 5. Render Methods (Strictly Unchanged UI)
+  // --- 4. Render Layout ---
   const renderHeaders = () => {
     if (activeTab === 'OWLS' || activeTab === 'RAPTORS') {
       return (
@@ -249,6 +248,10 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto font-sans p-6">
+      
+      {/* INJECTED ENGINE */}
+      <SyncEngine />
+
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-black text-white tracking-tight uppercase flex items-center gap-3">Dashboard</h1>
